@@ -1,6 +1,5 @@
 import React from "react";
-import { useOrientation as useOrientationReactUse } from "react-use";
-import { useOrientation as useOrientationUidot } from "@uidotdev/usehooks";
+import { useDeviceOrientation as useDeviceOrientationSiberia } from "@siberiacancode/reactuse";
 import useDeviceOrientation from "./hooks/use-device-orientation";
 import "./App.css";
 
@@ -27,40 +26,17 @@ function Card({
 }
 
 export default function OrientationExamples() {
-  type ReactUseOrientationState =
-    | {
-        angle?: number;
-        type?: string;
-        alpha?: number | null;
-        beta?: number | null;
-        gamma?: number | null;
-        supported?: boolean;
-      }
-    | undefined;
-
-  const ru = useOrientationReactUse() as ReactUseOrientationState;
-  const uidot = useOrientationUidot();
+  const deviceSiberia = useDeviceOrientationSiberia();
   const device = useDeviceOrientation();
 
   return (
     <main style={{ padding: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
-      <Card title="react-use (useOrientation)">
-        <div>angle: {ru?.angle ?? "n/a"}</div>
-        <div>type: {ru?.type ?? "n/a"}</div>
-        <div>alpha: {String(ru?.alpha ?? "—")}</div>
-        <div>beta: {String(ru?.beta ?? "—")}</div>
-        <div>gamma: {String(ru?.gamma ?? "—")}</div>
-        <div>supported: {String(ru?.supported ?? false)}</div>
-      </Card>
-
-      <Card title="@uidotdev/usehooks (useOrientation)">
-        <div>angle: {uidot?.angle ?? "n/a"}</div>
-        <div>type: {uidot?.type ?? "n/a"}</div>
-        <div style={{ marginTop: 8, fontStyle: "italic", color: "#444" }}>
-          Note: @uidotdev/usehooks returns only <strong>angle</strong> and{" "}
-          <strong>type</strong>; it does not provide <strong>alpha</strong>/
-          <strong>beta</strong>/<strong>gamma</strong>.
-        </div>
+      <Card title="@siberiacancode/reactuse (useDeviceOrientation)">
+        <div>supported: {deviceSiberia.supported ? "yes" : "no"}</div>
+        <div>alpha: {deviceSiberia.value.alpha ?? "—"}</div>
+        <div>beta: {deviceSiberia.value.beta ?? "—"}</div>
+        <div>gamma: {deviceSiberia.value.gamma ?? "—"}</div>
+        <div>absolute: {String(deviceSiberia.value.absolute ?? "—")}</div>
       </Card>
 
       <Card title="usehooks.io (useDeviceOrientation)">
