@@ -24,13 +24,13 @@ interface UseDeviceOrientationMovementReturn {
 const useDeviceOrientationMovement = (): UseDeviceOrientationMovementReturn => {
   const deviceOrientation = useDeviceOrientation()
 
-  const previousAlpha = useRef<number | null>(null)
-  const previousBeta = useRef<number | null>(null)
-  const previousGamma = useRef<number | null>(null)
+  const previousAlpha = useRef<number | null>(null),
+    previousBeta = useRef<number | null>(null),
+    previousGamma = useRef<number | null>(null)
 
-  const [movementAlpha, setMovementAlpha] = useState(0)
-  const [movementBeta, setMovementBeta] = useState(0)
-  const [movementGamma, setMovementGamma] = useState(0)
+  const [movementAlpha, setMovementAlpha] = useState(0),
+    [movementBeta, setMovementBeta] = useState(0),
+    [movementGamma, setMovementGamma] = useState(0)
 
   useEffect(() => {
     const { orientation } = deviceOrientation
@@ -61,9 +61,9 @@ const useDeviceOrientationMovement = (): UseDeviceOrientationMovementReturn => {
       return
     }
 
-    const currentAlpha = alpha ?? previousAlpha.current
-    const currentBeta = beta ?? previousBeta.current
-    const currentGamma = gamma ?? previousGamma.current
+    const currentAlpha = alpha ?? previousAlpha.current,
+      currentBeta = beta ?? previousBeta.current,
+      currentGamma = gamma ?? previousGamma.current
 
     // Normalize alpha delta to [-180, 180).
     //
@@ -75,8 +75,8 @@ const useDeviceOrientationMovement = (): UseDeviceOrientationMovementReturn => {
     const movementAlpha =
       ((currentAlpha - previousAlpha.current + 540) % 360) - 180
 
-    const movementBeta = currentBeta - previousBeta.current
-    const movementGamma = currentGamma - previousGamma.current
+    const movementBeta = currentBeta - previousBeta.current,
+      movementGamma = currentGamma - previousGamma.current
 
     const hasGimbalLockNoise =
       Math.abs(movementAlpha) > GIMBAL_LOCK_JUMP_THRESHOLD ||

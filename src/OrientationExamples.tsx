@@ -27,6 +27,14 @@ function Card({
 export default function OrientationExamples() {
   const device = useDeviceOrientationMovement()
 
+  let alpha = device.orientation?.alpha ?? "-",
+    beta = device.orientation?.beta ?? "-",
+    gamma = device.orientation?.gamma ?? "-"
+
+  alpha = typeof alpha === "number" ? alpha.toFixed(2) : "-"
+  beta = typeof beta === "number" ? beta.toFixed(2) : "-"
+  gamma = typeof gamma === "number" ? gamma.toFixed(2) : "-"
+
   return (
     <main style={{ padding: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
       <Card title="usehooks.io (useDeviceOrientation)">
@@ -61,9 +69,9 @@ export default function OrientationExamples() {
         </div>
 
         <div style={{ marginTop: 8 }}>
-          <div>alpha: {device.orientation?.alpha ?? "—"}</div>
-          <div>beta: {device.orientation?.beta ?? "—"}</div>
-          <div>gamma: {device.orientation?.gamma ?? "—"}</div>
+          <div>alpha: {alpha ?? "—"}</div>
+          <div>beta: {beta ?? "—"}</div>
+          <div>gamma: {gamma ?? "—"}</div>
           <div>absolute: {String(device.orientation?.absolute ?? "—")}</div>
           <div>
             webkitCompassHeading:{" "}
