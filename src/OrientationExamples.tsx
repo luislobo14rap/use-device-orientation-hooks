@@ -1,6 +1,6 @@
 import React from "react";
 import { useDeviceOrientation as useDeviceOrientationSiberia } from "@siberiacancode/reactuse";
-import useDeviceOrientationMovement from "./hooks/use-device-orientation-movement";
+import { useDeviceOrientationMovement } from "./hooks/use-device-orientation-movement";
 import "./App.css";
 
 function Card({
