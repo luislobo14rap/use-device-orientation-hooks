@@ -1,5 +1,4 @@
 import React from "react"
-import { useDeviceOrientation as useDeviceOrientationSiberia } from "@siberiacancode/reactuse"
 import { useDeviceOrientationMovement } from "./hooks/use-device-orientation-movement"
 import "./App.css"
 
@@ -26,19 +25,10 @@ function Card({
 }
 
 export default function OrientationExamples() {
-  const deviceSiberia = useDeviceOrientationSiberia()
   const device = useDeviceOrientationMovement()
 
   return (
     <main style={{ padding: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
-      <Card title="@siberiacancode/reactuse (useDeviceOrientation)">
-        <div>supported: {deviceSiberia.supported ? "yes" : "no"}</div>
-        <div>alpha: {deviceSiberia.value.alpha ?? "—"}</div>
-        <div>beta: {deviceSiberia.value.beta ?? "—"}</div>
-        <div>gamma: {deviceSiberia.value.gamma ?? "—"}</div>
-        <div>absolute: {String(deviceSiberia.value.absolute ?? "—")}</div>
-      </Card>
-
       <Card title="usehooks.io (useDeviceOrientation)">
         <div>supported: {device.isSupported ? "yes" : "no"}</div>
         <div>Status: {device.isListening ? "listening" : "stopped"}</div>
@@ -86,6 +76,13 @@ export default function OrientationExamples() {
           <div>alpha: {device.movementAlpha.toFixed(2)}</div>
           <div>beta: {device.movementBeta.toFixed(2)}</div>
           <div>gamma: {device.movementGamma.toFixed(2)}</div>
+        </div>
+
+        <div style={{ marginTop: 8 }}>
+          <strong>Offset:</strong>
+          <div>x (alpha): {device.offset.x.toFixed(2)}</div>
+          <div>y (beta): {device.offset.y.toFixed(2)}</div>
+          <div>z (gamma): {device.offset.z.toFixed(2)}</div>
         </div>
       </Card>
     </main>
