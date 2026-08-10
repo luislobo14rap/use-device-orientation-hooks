@@ -5,7 +5,7 @@ import { useDeviceOrientation } from "./use-device-orientation"
 
 // Above this many degrees of raw delta, treat the reading as gimbal lock
 // noise (alpha/gamma degenerate near beta ±90) and discard the frame.
-const GIMBAL_LOCK_JUMP_THRESHOLD = 45
+const GIMBAL_LOCK_JUMP_THRESHOLD = 5
 
 interface UseDeviceOrientationMovementReturn {
   orientation: ReturnType<typeof useDeviceOrientation>["orientation"]
