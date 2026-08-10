@@ -1,7 +1,7 @@
-import OrientationExamples from "./OrientationExamples";
+import OrientationExamples from "./OrientationExamples"
 
 function App() {
-  return <OrientationExamples />;
+  return <OrientationExamples />
 }
 
-export default App;
+export default App

@@ -1,14 +1,14 @@
-import React from "react";
-import { useDeviceOrientation as useDeviceOrientationSiberia } from "@siberiacancode/reactuse";
-import { useDeviceOrientationMovement } from "./hooks/use-device-orientation-movement";
-import "./App.css";
+import React from "react"
+import { useDeviceOrientation as useDeviceOrientationSiberia } from "@siberiacancode/reactuse"
+import useDeviceOrientationMovement from "./hooks/use-device-orientation-movement"
+import "./App.css"
 
 function Card({
   title,
   children,
 }: {
-  title: string;
-  children: React.ReactNode;
+  title: string
+  children: React.ReactNode
 }) {
   return (
     <div
@@ -22,12 +22,12 @@ function Card({
       <h3 style={{ marginTop: 0 }}>{title}</h3>
       <div>{children}</div>
     </div>
-  );
+  )
 }
 
 export default function OrientationExamples() {
-  const deviceSiberia = useDeviceOrientationSiberia();
-  const device = useDeviceOrientationMovement();
+  const deviceSiberia = useDeviceOrientationSiberia()
+  const device = useDeviceOrientationMovement()
 
   return (
     <main style={{ padding: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
@@ -49,8 +49,8 @@ export default function OrientationExamples() {
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
           <button
             onClick={async () => {
-              const ok = await device.requestPermission();
-              if (ok) device.startListening();
+              const ok = await device.requestPermission()
+              if (ok) device.startListening()
             }}
             disabled={!device.isSupported || device.isListening}
           >
@@ -89,5 +89,5 @@ export default function OrientationExamples() {
         </div>
       </Card>
     </main>
-  );
+  )
 }
