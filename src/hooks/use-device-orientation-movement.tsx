@@ -18,70 +18,79 @@ interface UseDeviceOrientationMovementReturn {
   movementGamma: number;
 }
 
-export const useDeviceOrientationMovement =
-  (): UseDeviceOrientationMovementReturn => {
-    const deviceOrientation = useDeviceOrientation();
+const useDeviceOrientationMovement = (): UseDeviceOrientationMovementReturn => {
+  const deviceOrientation = useDeviceOrientation();
 
-    const previousAlpha = useRef<number | null>(null);
-    const previousBeta = useRef<number | null>(null);
-    const previousGamma = useRef<number | null>(null);
+  const previousAlpha = useRef<number | null>(null);
+  const previousBeta = useRef<number | null>(null);
+  const previousGamma = useRef<number | null>(null);
 
-    const [movementAlpha, setMovementAlpha] = useState(0);
-    const [movementBeta, setMovementBeta] = useState(0);
-    const [movementGamma, setMovementGamma] = useState(0);
+  const [movementAlpha, setMovementAlpha] = useState(0);
+  const [movementBeta, setMovementBeta] = useState(0);
+  const [movementGamma, setMovementGamma] = useState(0);
+  const [offset, setOffset] = useState({ x: 0, y: 0, z: 0 });
 
-    useEffect(() => {
-      const { orientation } = deviceOrientation;
+  useEffect(() => {
+    const { orientation } = deviceOrientation;
 
-      if (!orientation) {
-        previousAlpha.current = null;
-        previousBeta.current = null;
-        previousGamma.current = null;
+    if (!orientation) {
+      previousAlpha.current = null;
+      previousBeta.current = null;
+      previousGamma.current = null;
 
-        setMovementAlpha(0);
-        setMovementBeta(0);
-        setMovementGamma(0);
+      setMovementAlpha(0);
+      setMovementBeta(0);
+      setMovementGamma(0);
 
-        return;
-      }
+      return;
+    }
 
-      const { alpha, beta, gamma } = orientation;
+    const { alpha, beta, gamma } = orientation;
 
-      if (
-        previousAlpha.current === null ||
-        previousBeta.current === null ||
-        previousGamma.current === null
-      ) {
-        previousAlpha.current = alpha;
-        previousBeta.current = beta;
-        previousGamma.current = gamma;
+    if (
+      previousAlpha.current === null ||
+      previousBeta.current === null ||
+      previousGamma.current === null
+    ) {
+      previousAlpha.current = alpha;
+      previousBeta.current = beta;
+      previousGamma.current = gamma;
 
-        return;
-      }
+      setOffset({
+        x: alpha ?? 0,
+        y: beta ?? 0,
+        z: gamma ?? 0,
+      });
 
-      const currentAlpha = alpha ?? previousAlpha.current;
-      const currentBeta = beta ?? previousBeta.current;
-      const currentGamma = gamma ?? previousGamma.current;
+      return;
+    }
 
-      const movementAlpha =
-        ((currentAlpha - previousAlpha.current + 180) % 360) - 180;
+    const currentAlpha = alpha ?? previousAlpha.current;
+    const currentBeta = beta ?? previousBeta.current;
+    const currentGamma = gamma ?? previousGamma.current;
 
-      const movementBeta = currentBeta - previousBeta.current;
-      const movementGamma = currentGamma - previousGamma.current;
+    const movementAlpha =
+      ((currentAlpha - previousAlpha.current + 180) % 360) - 180;
 
-      setMovementAlpha(movementAlpha);
-      setMovementBeta(movementBeta);
-      setMovementGamma(movementGamma);
+    const movementBeta = currentBeta - previousBeta.current;
+    const movementGamma = currentGamma - previousGamma.current;
 
-      previousAlpha.current = currentAlpha;
-      previousBeta.current = currentBeta;
-      previousGamma.current = currentGamma;
-    }, [deviceOrientation.orientation]);
+    setMovementAlpha(movementAlpha);
+    setMovementBeta(movementBeta);
+    setMovementGamma(movementGamma);
 
-    return {
-      ...deviceOrientation,
-      movementAlpha,
-      movementBeta,
-      movementGamma,
-    };
+    previousAlpha.current = currentAlpha;
+    previousBeta.current = currentBeta;
+    previousGamma.current = currentGamma;
+  }, [deviceOrientation.orientation]);
+
+  return {
+    ...deviceOrientation,
+    offset,
+    movementAlpha,
+    movementBeta,
+    movementGamma,
   };
+};
+
+export { useDeviceOrientationMovement };
