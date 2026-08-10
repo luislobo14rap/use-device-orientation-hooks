@@ -12,9 +12,7 @@ export type OrientationData = {
   webkitCompassHeading?: number | null;
 };
 
-export default function useDeviceOrientation(
-  options?: UseDeviceOrientationOptions,
-) {
+function useDeviceOrientation(options?: UseDeviceOrientationOptions) {
   const isSupported =
     typeof window !== "undefined" && "DeviceOrientationEvent" in window;
 
@@ -115,3 +113,5 @@ export default function useDeviceOrientation(
     isListening,
   };
 }
+
+export { useDeviceOrientation };
