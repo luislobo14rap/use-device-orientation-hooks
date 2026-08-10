@@ -77,13 +77,6 @@ export default function OrientationExamples() {
           <div>beta: {device.movementBeta.toFixed(2)}</div>
           <div>gamma: {device.movementGamma.toFixed(2)}</div>
         </div>
-
-        <div style={{ marginTop: 8 }}>
-          <strong>Offset:</strong>
-          <div>x (alpha): {device.offset.x.toFixed(2)}</div>
-          <div>y (beta): {device.offset.y.toFixed(2)}</div>
-          <div>z (gamma): {device.offset.z.toFixed(2)}</div>
-        </div>
       </Card>
     </main>
   )

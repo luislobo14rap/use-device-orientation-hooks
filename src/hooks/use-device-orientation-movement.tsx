@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { useDeviceOrientation } from "./use-device-orientation"
 
 // Above this many degrees of raw delta, treat the reading as gimbal lock
-// noise (alpha/gamma degenerate near beta ±90) and discard the frame
+// noise (alpha/gamma degenerate near beta ±90) and discard the frame.
 const GIMBAL_LOCK_JUMP_THRESHOLD = 45
 
 interface UseDeviceOrientationMovementReturn {
@@ -15,7 +15,6 @@ interface UseDeviceOrientationMovementReturn {
   startListening: () => void
   stopListening: () => void
   isListening: boolean
-  offset: { x: number; y: number; z: number }
 
   movementAlpha: number
   movementBeta: number
@@ -32,7 +31,6 @@ const useDeviceOrientationMovement = (): UseDeviceOrientationMovementReturn => {
   const [movementAlpha, setMovementAlpha] = useState(0)
   const [movementBeta, setMovementBeta] = useState(0)
   const [movementGamma, setMovementGamma] = useState(0)
-  const [offset, setOffset] = useState({ x: 0, y: 0, z: 0 })
 
   useEffect(() => {
     const { orientation } = deviceOrientation
@@ -60,12 +58,6 @@ const useDeviceOrientationMovement = (): UseDeviceOrientationMovementReturn => {
       previousBeta.current = beta
       previousGamma.current = gamma
 
-      setOffset({
-        x: alpha ?? 0,
-        y: beta ?? 0,
-        z: gamma ?? 0,
-      })
-
       return
     }
 
@@ -73,34 +65,44 @@ const useDeviceOrientationMovement = (): UseDeviceOrientationMovementReturn => {
     const currentBeta = beta ?? previousBeta.current
     const currentGamma = gamma ?? previousGamma.current
 
+    // Normalize alpha delta to [-180, 180).
+    //
+    // This makes circular transitions behave correctly:
+    // 358 -> 359 = +1
+    // 359 ->   0 = +1
+    //   0 ->   1 = +1
+    //   1 ->   3 = +2
     const movementAlpha =
-      ((currentAlpha - previousAlpha.current + 180) % 360) - 180
+      ((currentAlpha - previousAlpha.current + 540) % 360) - 180
 
     const movementBeta = currentBeta - previousBeta.current
     const movementGamma = currentGamma - previousGamma.current
 
-    // Discard frames where alpha or gamma jump too much at once — this is
-    // gimbal lock noise near beta ±90, not real movement, so we skip the
-    // update and keep the previous reference for the next frame
-    if (
+    const hasGimbalLockNoise =
       Math.abs(movementAlpha) > GIMBAL_LOCK_JUMP_THRESHOLD ||
       Math.abs(movementGamma) > GIMBAL_LOCK_JUMP_THRESHOLD
-    ) {
+
+    // Always update the reference with the latest sensor reading.
+    //
+    // Even when the delta is invalid, the current value must become
+    // the new baseline so the next frame can recover normally.
+    previousAlpha.current = currentAlpha
+    previousBeta.current = currentBeta
+    previousGamma.current = currentGamma
+
+    // The current reading is valid as a reference,
+    // but its movement delta is too large to report.
+    if (hasGimbalLockNoise) {
       return
     }
 
     setMovementAlpha(movementAlpha)
     setMovementBeta(movementBeta)
     setMovementGamma(movementGamma)
-
-    previousAlpha.current = currentAlpha
-    previousBeta.current = currentBeta
-    previousGamma.current = currentGamma
   }, [deviceOrientation.orientation])
 
   return {
     ...deviceOrientation,
-    offset,
     movementAlpha,
     movementBeta,
     movementGamma,
