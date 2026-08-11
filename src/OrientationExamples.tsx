@@ -39,9 +39,9 @@ export default function OrientationExamples() {
       return
     }
 
-    setTotalAlpha(a => a + device.movementAlpha)
-    setTotalBeta(b => b + device.movementBeta)
-    setTotalGamma(g => g + device.movementGamma)
+    setTotalAlpha(a => a + Math.abs(device.movementAlpha))
+    setTotalBeta(b => b + Math.abs(device.movementBeta))
+    setTotalGamma(g => g + Math.abs(device.movementGamma))
   }, [device.isListening, device.movementAlpha, device.movementBeta, device.movementGamma])
 
   let alpha = device.orientation?.alpha ?? "-",
