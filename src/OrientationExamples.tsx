@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { useDeviceOrientationMovement } from "./hooks/use-device-orientation-movement"
 import "./App.css"
 
@@ -26,6 +26,23 @@ function Card({
 
 export default function OrientationExamples() {
   const device = useDeviceOrientationMovement()
+
+  const [totalAlpha, setTotalAlpha] = useState(0)
+  const [totalBeta, setTotalBeta] = useState(0)
+  const [totalGamma, setTotalGamma] = useState(0)
+
+  useEffect(() => {
+    if (!device.isListening) {
+      setTotalAlpha(0)
+      setTotalBeta(0)
+      setTotalGamma(0)
+      return
+    }
+
+    setTotalAlpha(a => a + device.movementAlpha)
+    setTotalBeta(b => b + device.movementBeta)
+    setTotalGamma(g => g + device.movementGamma)
+  }, [device.isListening, device.movementAlpha, device.movementBeta, device.movementGamma])
 
   let alpha = device.orientation?.alpha ?? "-",
     beta = device.orientation?.beta ?? "-",
@@ -84,6 +101,13 @@ export default function OrientationExamples() {
           <div>alpha: {device.movementAlpha.toFixed(2)}</div>
           <div>beta: {device.movementBeta.toFixed(2)}</div>
           <div>gamma: {device.movementGamma.toFixed(2)}</div>
+        </div>
+
+        <div style={{ marginTop: 8 }}>
+          <strong>Movement acumulado:</strong>
+          <div>alpha: {totalAlpha.toFixed(2)}</div>
+          <div>beta: {totalBeta.toFixed(2)}</div>
+          <div>gamma: {totalGamma.toFixed(2)}</div>
         </div>
       </Card>
     </main>
