@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react"
-import { useDeviceOrientationMovement } from "./hooks/use-device-orientation-movement"
-import "./App.css"
+import { useDeviceOrientationMovement } from "../hooks/use-device-orientation-movement"
+import { FPSCounter } from "../components/fps-counter"
+import "../App.css"
 
 function Card({
   title,
@@ -56,7 +57,9 @@ export default function OrientationExamples() {
   gamma = typeof gamma === "number" ? gamma.toFixed(2) : "-"
 
   return (
-    <main style={{ padding: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
+    <>
+      <FPSCounter />
+      <main style={{ padding: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
       <Card title="usehooks.io (useDeviceOrientation)">
         <div>supported: {device.isSupported ? "yes" : "no"}</div>
         <div>Status: {device.isListening ? "listening" : "stopped"}</div>
@@ -137,5 +140,6 @@ export default function OrientationExamples() {
         )}
       </Card>
     </main>
+    </>
   )
 }

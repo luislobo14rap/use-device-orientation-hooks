@@ -1,4 +1,4 @@
-import OrientationExamples from "./OrientationExamples"
+import OrientationExamples from "./componentes/OrientationExamples"
 
 function App() {
   return <OrientationExamples />
