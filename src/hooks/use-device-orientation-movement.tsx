@@ -116,8 +116,11 @@ const useDeviceOrientationMovement = (
       return
     }
 
-    // adiciona vantagem para o alpha que possui o movimento mais relevante
-    if (maxDelta === absGamma && absAlpha >= absGamma * 0.2) {
+    if (
+      maxDelta === absAlpha ||
+      // adiciona vantagem para o alpha que possui o movimento mais relevante
+      (maxDelta === absGamma && absAlpha >= absGamma * 0.2)
+    ) {
       setMovementAlpha(movementAlpha)
       setMovementBeta(0)
       setMovementGamma(0)
