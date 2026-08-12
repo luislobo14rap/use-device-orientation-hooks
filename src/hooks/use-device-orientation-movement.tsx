@@ -96,35 +96,36 @@ const useDeviceOrientationMovement = (
       return
     }
 
-    if (options?.hardAcumulator) {
-      const absAlpha = Math.abs(movementAlpha)
-      const absBeta = Math.abs(movementBeta)
-      const absGamma = Math.abs(movementGamma)
-
-      const maxDelta = Math.max(absAlpha, absBeta, absGamma)
-
-      if (absGamma === maxDelta && absAlpha >= absGamma - 0.218) {
-        setMovementAlpha(movementAlpha)
-        setMovementBeta(0)
-        setMovementGamma(0)
-      } else if (absAlpha === maxDelta) {
-        setMovementAlpha(movementAlpha)
-        setMovementBeta(0)
-        setMovementGamma(0)
-      } else if (absBeta === maxDelta) {
-        setMovementAlpha(0)
-        setMovementBeta(movementBeta)
-        setMovementGamma(0)
-      } else {
-        setMovementAlpha(0)
-        setMovementBeta(0)
-        setMovementGamma(movementGamma)
-      }
+    if (!options?.hardAcumulator) {
+      setMovementAlpha(movementAlpha)
+      setMovementBeta(movementBeta)
+      setMovementGamma(movementGamma)
       return
     }
 
-    setMovementAlpha(movementAlpha)
-    setMovementBeta(movementBeta)
+    const absAlpha = Math.abs(movementAlpha),
+      absBeta = Math.abs(movementBeta),
+      absGamma = Math.abs(movementGamma),
+      maxDelta = Math.max(absAlpha, absBeta, absGamma)
+
+    // o beta é o mais simples de isolar, então já adianta ele
+    if (maxDelta === absBeta) {
+      setMovementAlpha(0)
+      setMovementBeta(movementBeta)
+      setMovementGamma(0)
+      return
+    }
+
+    // adiciona vantagem para o alpha que possui o movimento mais relevante
+    if (maxDelta === absGamma && absAlpha >= absGamma - 0.218) {
+      setMovementAlpha(movementAlpha)
+      setMovementBeta(0)
+      setMovementGamma(0)
+      return
+    }
+
+    setMovementAlpha(0)
+    setMovementBeta(0)
     setMovementGamma(movementGamma)
   }, [deviceOrientation.orientation])
 
