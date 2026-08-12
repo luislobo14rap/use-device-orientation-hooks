@@ -26,7 +26,7 @@ interface UseDeviceOrientationMovementOptions {
 }
 
 const useDeviceOrientationMovement = (
-  options?: UseDeviceOrientationMovementOptions,
+  options?: UseDeviceOrientationMovementOptions
 ): UseDeviceOrientationMovementReturn => {
   const deviceOrientation = useDeviceOrientation()
 
@@ -103,7 +103,7 @@ const useDeviceOrientationMovement = (
 
       const maxDelta = Math.max(absAlpha, absBeta, absGamma)
 
-      if (absGamma === maxDelta && absAlpha >= absGamma - 0.3) {
+      if (absGamma === maxDelta && absAlpha >= absGamma - 0.2) {
         setMovementAlpha(movementAlpha)
         setMovementBeta(0)
         setMovementGamma(0)
