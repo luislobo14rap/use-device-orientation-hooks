@@ -67,7 +67,16 @@ const useDeviceOrientationMovement = (
       return
     }
 
-    const { alpha, beta, gamma } = orientation
+    let { alpha, beta, gamma } = orientation
+    if (typeof alpha === "number") {
+      alpha += 1000
+    }
+    if (typeof beta === "number") {
+      beta += 1000
+    }
+    if (typeof gamma === "number") {
+      gamma += 1000
+    }
 
     if (
       previousAlpha.current === null ||
@@ -85,17 +94,8 @@ const useDeviceOrientationMovement = (
       currentBeta = beta ?? previousBeta.current,
       currentGamma = gamma ?? previousGamma.current
 
-    // Normalize alpha delta to [-180, 180).
-    //
-    // This makes circular transitions behave correctly:
-    // 358 -> 359 = +1
-    // 359 ->   0 = +1
-    //   0 ->   1 = +1
-    //   1 ->   3 = +2
-    const movementAlpha =
-      ((currentAlpha - previousAlpha.current + 540) % 360) - 180
-
-    const movementBeta = currentBeta - previousBeta.current,
+    const movementAlpha = currentAlpha - previousAlpha.current,
+      movementBeta = currentBeta - previousBeta.current,
       movementGamma = currentGamma - previousGamma.current
 
     const hasGimbalLockNoise =
