@@ -19,7 +19,7 @@ interface UseDeviceOrientationMovementOptions {
    * When true, only the single dominant axis per frame is reported (the
    * other two are zeroed), chosen by magnitude with a bias toward alpha
    * over gamma on near-ties. Also tracks a rolling historical winner over
-   * the last 100 frames. When false/omitted, all three axes are reported
+   * the last 10 frames. When false/omitted, all three axes are reported
    * every frame (each still clamped).
    */
   hardAcumulator?: boolean
@@ -59,7 +59,7 @@ interface UseDeviceOrientationMovementReturn {
 
   /** Eixo dominante no frame mais recente (só relevante com hardAcumulator). */
   currentWinner: Axis
-  /** Eixo mais frequentemente dominante nos últimos 100 frames. */
+  /** Eixo mais frequentemente dominante nos últimos 10 frames. */
   historicalWinner: Axis
 }
 
@@ -104,7 +104,7 @@ const useDeviceOrientationMovement = (
 
     const { alpha, beta, gamma } = orientation
 
-    // Valores crus, com sinal preservado. Nada de Math.abs()/+1000 aqui: o
+    // Valores crus, com sinal preservado. Nada de Math.abs()/+100 aqui: o
     // delta já cancela qualquer offset constante (é um no-op matemático), e
     // aplicar abs() no valor bruto ANTES do delta apaga movimento real perto
     // de zero-crossing (ex: -1° → 1° é um giro real de 2°, mas viraria
@@ -133,9 +133,9 @@ const useDeviceOrientationMovement = (
     if (hasNoise) return
 
     if (!hardAcumulator) {
-      setX(clamp(deltaBeta))
-      setY(clamp(deltaGamma))
-      setZ(clamp(deltaAlpha))
+      setX(clamp(deltaBeta, maxExpected))
+      setY(clamp(deltaGamma, maxExpected))
+      setZ(clamp(deltaAlpha, maxExpected))
       return
     }
 
@@ -160,7 +160,7 @@ const useDeviceOrientationMovement = (
     }
 
     winnerHistory.current.push(winner)
-    if (winnerHistory.current.length > 100) {
+    if (winnerHistory.current.length > 10) {
       winnerHistory.current.shift()
     }
 
@@ -182,7 +182,7 @@ const useDeviceOrientationMovement = (
     setHistoricalWinner(dominantWinner)
 
     if (winner === "beta") {
-      setX(clamp(deltaBeta))
+      setX(clamp(deltaBeta, maxExpected))
       setY(0)
       setZ(0)
       return
@@ -190,19 +190,15 @@ const useDeviceOrientationMovement = (
 
     if (winner === "gamma") {
       setX(0)
-      setY(clamp(deltaGamma))
+      setY(clamp(deltaGamma, maxExpected))
       setZ(0)
       return
     }
 
     setX(0)
     setY(0)
-    setZ(clamp(deltaAlpha))
+    setZ(clamp(deltaAlpha, maxExpected))
   }, [orientation, maxExpected, hardAcumulator])
-
-  function clamp(value: number) {
-    return Math.max(Math.min(value, maxExpected), -maxExpected)
-  }
 
   const forceX = y,
     forceY = x,
@@ -219,6 +215,10 @@ const useDeviceOrientationMovement = (
     currentWinner,
     historicalWinner,
   }
+}
+
+function clamp(value: number, maxExpected: number) {
+  return Math.max(Math.min(value, maxExpected), -maxExpected)
 }
 
 export { useDeviceOrientationMovement }
