@@ -28,6 +28,7 @@ export default function OrientationExamples() {
   const [hardAcumulator, setHardAcumulator] = useState(false)
   const device = useDeviceOrientationMovement({ hardAcumulator })
 
+  // Acumulados por eixo do sensor (z=alpha, x=beta, y=gamma)
   const [totalAlpha, setTotalAlpha] = useState(0)
   const [totalBeta, setTotalBeta] = useState(0)
   const [totalGamma, setTotalGamma] = useState(0)
@@ -40,15 +41,11 @@ export default function OrientationExamples() {
       return
     }
 
-    setTotalAlpha((a) => a + Math.abs(device.movementAlpha))
-    setTotalBeta((b) => b + Math.abs(device.movementBeta))
-    setTotalGamma((g) => g + Math.abs(device.movementGamma))
-  }, [
-    device.isListening,
-    device.movementAlpha,
-    device.movementBeta,
-    device.movementGamma,
-  ])
+    // z ← alpha (yaw), x ← beta (pitch), y ← gamma (roll)
+    setTotalAlpha((a) => a + Math.abs(device.z))
+    setTotalBeta((b) => b + Math.abs(device.x))
+    setTotalGamma((g) => g + Math.abs(device.y))
+  }, [device.isListening, device.x, device.y, device.z])
 
   let alpha = device.orientation?.alpha ?? "-",
     beta = device.orientation?.beta ?? "-",
@@ -67,7 +64,9 @@ export default function OrientationExamples() {
           <div style={{ color: "red" }}>Error: {device.error}</div>
         )}
 
-        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+        <div
+          style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}
+        >
           <button
             onClick={async () => {
               const ok = await device.requestPermission()
@@ -110,9 +109,16 @@ export default function OrientationExamples() {
 
         <div style={{ marginTop: 8 }}>
           <strong>Movement (delta):</strong>
-          <div>alpha: {device.movementAlpha.toFixed(2)}</div>
-          <div>beta: {device.movementBeta.toFixed(2)}</div>
-          <div>gamma: {device.movementGamma.toFixed(2)}</div>
+          <div>alpha → z: {device.z.toFixed(2)}</div>
+          <div>beta → x: {device.x.toFixed(2)}</div>
+          <div>gamma → y: {device.y.toFixed(2)}</div>
+        </div>
+
+        <div style={{ marginTop: 8 }}>
+          <strong>forceX / forceY / forceZ (mapeamento web):</strong>
+          <div>forceX (= gamma/y): {device.forceX.toFixed(2)}</div>
+          <div>forceY (= beta/x): {device.forceY.toFixed(2)}</div>
+          <div>forceZ (= alpha/z): {device.forceZ.toFixed(2)}</div>
         </div>
 
         <div style={{ marginTop: 8 }}>
