@@ -146,7 +146,7 @@ const useDeviceOrientationMovement = (
           : "gamma"
 
     const adjustedAlpha =
-        dominantWinner === "alpha" ? absAlpha * 1.15 : absAlpha,
+        dominantWinner === "alpha" ? absAlpha * 1.45 : absAlpha,
       adjustedBeta = dominantWinner === "beta" ? absBeta * 1.15 : absBeta,
       adjustedGamma = dominantWinner === "gamma" ? absGamma * 1.15 : absGamma
 
