@@ -102,13 +102,13 @@ const useDeviceOrientationMovement = (
       Math.abs(movementAlpha) > GIMBAL_LOCK_JUMP_THRESHOLD ||
       Math.abs(movementGamma) > GIMBAL_LOCK_JUMP_THRESHOLD
 
-    previousAlpha.current = currentAlpha
-    previousBeta.current = currentBeta
-    previousGamma.current = currentGamma
-
     if (hasGimbalLockNoise) {
       return
     }
+
+    previousAlpha.current = currentAlpha
+    previousBeta.current = currentBeta
+    previousGamma.current = currentGamma
 
     if (!options?.hardAcumulator) {
       setMovementAlpha(movementAlpha)
@@ -117,17 +117,24 @@ const useDeviceOrientationMovement = (
       return
     }
 
-    let absAlpha = Math.abs(movementAlpha)
-    absAlpha = absAlpha * 1.1
-    const absBeta = Math.abs(movementBeta),
+    const absAlpha = Math.abs(movementAlpha),
+      absBeta = Math.abs(movementBeta),
       absGamma = Math.abs(movementGamma)
 
-    const winner: "alpha" | "beta" | "gamma" =
-      absAlpha >= absBeta && absAlpha >= absGamma
-        ? "alpha"
-        : absBeta >= absAlpha && absBeta >= absGamma
-          ? "beta"
-          : "gamma"
+    const maxDelta = Math.max(absAlpha, absBeta, absGamma)
+
+    let winner: "alpha" | "beta" | "gamma"
+
+    if (maxDelta === absBeta) {
+      winner = "beta"
+    } else if (
+      maxDelta === absAlpha ||
+      (maxDelta === absGamma && absAlpha >= absGamma * 0.5)
+    ) {
+      winner = "alpha"
+    } else {
+      winner = "gamma"
+    }
 
     winnerHistory.current.push(winner)
     if (winnerHistory.current.length > 100) {
@@ -146,30 +153,17 @@ const useDeviceOrientationMovement = (
           ? "beta"
           : "gamma"
 
-    const advantage = 1.25,
-      adjustedAlpha =
-        dominantWinner === "alpha" ? absAlpha * advantage : absAlpha,
-      adjustedBeta = dominantWinner === "beta" ? absBeta * advantage : absBeta,
-      adjustedGamma =
-        dominantWinner === "gamma" ? absGamma * advantage : absGamma
-
-    const adjustedMaxDelta = Math.max(
-      adjustedAlpha,
-      adjustedBeta,
-      adjustedGamma
-    )
-
     setCurrentWinner(winner)
     setHistoricalWinner(dominantWinner)
 
-    if (adjustedMaxDelta === adjustedAlpha) {
+    if (winner === "alpha") {
       setMovementAlpha(movementAlpha)
       setMovementBeta(0)
       setMovementGamma(0)
       return
     }
 
-    if (adjustedMaxDelta === adjustedBeta) {
+    if (winner === "beta") {
       setMovementAlpha(0)
       setMovementBeta(movementBeta)
       setMovementGamma(0)
