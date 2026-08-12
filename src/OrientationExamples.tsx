@@ -25,7 +25,8 @@ function Card({
 }
 
 export default function OrientationExamples() {
-  const device = useDeviceOrientationMovement()
+  const [hardAcumulator, setHardAcumulator] = useState(false)
+  const device = useDeviceOrientationMovement({ hardAcumulator })
 
   const [totalAlpha, setTotalAlpha] = useState(0)
   const [totalBeta, setTotalBeta] = useState(0)
@@ -39,10 +40,26 @@ export default function OrientationExamples() {
       return
     }
 
-    setTotalAlpha(a => a + Math.abs(device.movementAlpha))
-    setTotalBeta(b => b + Math.abs(device.movementBeta))
-    setTotalGamma(g => g + Math.abs(device.movementGamma))
-  }, [device.isListening, device.movementAlpha, device.movementBeta, device.movementGamma])
+    if (!hardAcumulator) {
+      setTotalAlpha(a => a + Math.abs(device.movementAlpha))
+      setTotalBeta(b => b + Math.abs(device.movementBeta))
+      setTotalGamma(g => g + Math.abs(device.movementGamma))
+      return
+    }
+
+    const absAlpha = Math.abs(device.movementAlpha)
+    const absBeta = Math.abs(device.movementBeta)
+    const absGamma = Math.abs(device.movementGamma)
+
+    const maxDelta = Math.max(absAlpha, absBeta, absGamma)
+
+    if (absAlpha === maxDelta) {
+      setTotalAlpha(a => a + absAlpha)
+    } else {
+      if (maxDelta === absBeta) setTotalBeta(b => b + absBeta)
+      if (maxDelta === absGamma) setTotalGamma(g => g + absGamma)
+    }
+  }, [device.isListening, device.movementAlpha, device.movementBeta, device.movementGamma, hardAcumulator])
 
   let alpha = device.orientation?.alpha ?? "-",
     beta = device.orientation?.beta ?? "-",
@@ -82,6 +99,12 @@ export default function OrientationExamples() {
             disabled={!device.isListening}
           >
             Stop
+          </button>
+          <button
+            onClick={() => setHardAcumulator(v => !v)}
+            disabled={!device.isSupported}
+          >
+            {hardAcumulator ? "Hard acumulator ON" : "Hard acumulator OFF"}
           </button>
         </div>
 

@@ -21,7 +21,13 @@ interface UseDeviceOrientationMovementReturn {
   movementGamma: number
 }
 
-const useDeviceOrientationMovement = (): UseDeviceOrientationMovementReturn => {
+interface UseDeviceOrientationMovementOptions {
+  hardAcumulator?: boolean
+}
+
+const useDeviceOrientationMovement = (
+  options?: UseDeviceOrientationMovementOptions,
+): UseDeviceOrientationMovementReturn => {
   const deviceOrientation = useDeviceOrientation()
 
   const previousAlpha = useRef<number | null>(null),
