@@ -160,7 +160,7 @@ const useDeviceOrientationMovement = (
     }
 
     winnerHistory.current.push(winner)
-    if (winnerHistory.current.length > 300) {
+    if (winnerHistory.current.length > 1000) {
       winnerHistory.current.shift()
     }
 
