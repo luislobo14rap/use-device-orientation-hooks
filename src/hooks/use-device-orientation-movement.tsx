@@ -88,17 +88,34 @@ const useDeviceOrientationMovement = (
       Math.abs(movementAlpha) > GIMBAL_LOCK_JUMP_THRESHOLD ||
       Math.abs(movementGamma) > GIMBAL_LOCK_JUMP_THRESHOLD
 
-    // Always update the reference with the latest sensor reading.
-    //
-    // Even when the delta is invalid, the current value must become
-    // the new baseline so the next frame can recover normally.
     previousAlpha.current = currentAlpha
     previousBeta.current = currentBeta
     previousGamma.current = currentGamma
 
-    // The current reading is valid as a reference,
-    // but its movement delta is too large to report.
     if (hasGimbalLockNoise) {
+      return
+    }
+
+    if (options?.hardAcumulator) {
+      const absAlpha = Math.abs(movementAlpha)
+      const absBeta = Math.abs(movementBeta)
+      const absGamma = Math.abs(movementGamma)
+
+      const maxDelta = Math.max(absAlpha, absBeta, absGamma)
+
+      if (absAlpha === maxDelta) {
+        setMovementAlpha(movementAlpha)
+        setMovementBeta(0)
+        setMovementGamma(0)
+      } else if (absBeta === maxDelta) {
+        setMovementAlpha(0)
+        setMovementBeta(movementBeta)
+        setMovementGamma(0)
+      } else {
+        setMovementAlpha(0)
+        setMovementBeta(0)
+        setMovementGamma(movementGamma)
+      }
       return
     }
 
