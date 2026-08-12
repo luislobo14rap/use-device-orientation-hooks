@@ -53,17 +53,17 @@ const useDeviceOrientationMovement = (
       previousBeta.current = null
       previousGamma.current = null
 
-       setMovementAlpha(0)
-       setMovementBeta(0)
-       setMovementGamma(0)
+      setMovementAlpha(0)
+      setMovementBeta(0)
+      setMovementGamma(0)
 
-       setCurrentWinner("alpha")
-       setHistoricalWinner("alpha")
+      setCurrentWinner("alpha")
+      setHistoricalWinner("alpha")
 
-       return
-     }
+      return
+    }
 
-     const { alpha, beta, gamma } = orientation
+    const { alpha, beta, gamma } = orientation
 
     if (
       previousAlpha.current === null ||
@@ -134,7 +134,7 @@ const useDeviceOrientationMovement = (
     const gammaCount = winnerHistory.current.filter((w) => w === "gamma").length
 
     const maxCount = Math.max(alphaCount, betaCount, gammaCount)
-    const historicalWinner: "alpha" | "beta" | "gamma" =
+    const dominantWinner: "alpha" | "beta" | "gamma" =
       alphaCount === maxCount
         ? "alpha"
         : betaCount === maxCount
@@ -142,18 +142,14 @@ const useDeviceOrientationMovement = (
           : "gamma"
 
     const adjustedAlpha =
-        historicalWinner === "alpha" ? absAlpha * 1.15 : absAlpha,
-      adjustedBeta = historicalWinner === "beta" ? absBeta * 1.15 : absBeta,
-      adjustedGamma = historicalWinner === "gamma" ? absGamma * 1.15 : absGamma
+        dominantWinner === "alpha" ? absAlpha * 1.15 : absAlpha,
+      adjustedBeta = dominantWinner === "beta" ? absBeta * 1.15 : absBeta,
+      adjustedGamma = dominantWinner === "gamma" ? absGamma * 1.15 : absGamma
 
-    const adjustedMaxDelta = Math.max(
-      adjustedAlpha,
-      adjustedBeta,
-      adjustedGamma
-    )
+    const adjustedMaxDelta = Math.max(adjustedAlpha, adjustedBeta, adjustedGamma)
 
     setCurrentWinner(winner)
-    setHistoricalWinner(historicalWinner)
+    setHistoricalWinner(dominantWinner)
 
     if (adjustedMaxDelta === adjustedAlpha) {
       setMovementAlpha(movementAlpha)
