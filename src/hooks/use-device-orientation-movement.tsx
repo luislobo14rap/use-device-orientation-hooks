@@ -118,7 +118,7 @@ const useDeviceOrientationMovement = (
     }
 
     let absAlpha = Math.abs(movementAlpha)
-    absAlpha = absAlpha * 1.15
+    absAlpha = absAlpha * 1.1
     const absBeta = Math.abs(movementBeta),
       absGamma = Math.abs(movementGamma)
 
