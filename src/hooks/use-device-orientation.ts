@@ -152,12 +152,12 @@ export const useDeviceOrientation = (
       }
     }
   }, [
-    isListening,
-    isSupported,
     options.absolute,
+    isSupported,
+    stopListening,
+    isListening,
     requestPermission,
     startListening,
-    stopListening,
   ])
 
   // Cleanup on unmount
