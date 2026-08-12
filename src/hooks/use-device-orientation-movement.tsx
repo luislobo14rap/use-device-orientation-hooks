@@ -121,7 +121,7 @@ const useDeviceOrientationMovement = (
     // proteção contra gimbal lock especificamente, é um teto máximo geral
     // de plausibilidade por frame.
     const hasNoise =
-      Math.abs(deltaAlpha) > DISCARD_ABOVE ||
+      Math.abs(deltaAlpha) > DISCARD_ABOVE * 2 ||
       Math.abs(deltaBeta) > DISCARD_ABOVE ||
       Math.abs(deltaGamma) > DISCARD_ABOVE
 
