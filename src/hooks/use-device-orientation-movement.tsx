@@ -103,7 +103,11 @@ const useDeviceOrientationMovement = (
 
       const maxDelta = Math.max(absAlpha, absBeta, absGamma)
 
-      if (absAlpha === maxDelta) {
+      if (absGamma === maxDelta && absAlpha >= absGamma - 0.3) {
+        setMovementAlpha(movementAlpha)
+        setMovementBeta(0)
+        setMovementGamma(0)
+      } else if (absAlpha === maxDelta) {
         setMovementAlpha(movementAlpha)
         setMovementBeta(0)
         setMovementGamma(0)
