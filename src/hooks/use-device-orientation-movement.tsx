@@ -67,12 +67,15 @@ const useDeviceOrientationMovement = (
 
     let { alpha, beta, gamma } = orientation
     if (typeof alpha === "number") {
+      alpha = Math.abs(alpha)
       alpha += 1000
     }
     if (typeof beta === "number") {
+      beta = Math.abs(beta)
       beta += 1000
     }
     if (typeof gamma === "number") {
+      gamma = Math.abs(gamma)
       gamma += 1000
     }
 
@@ -142,17 +145,19 @@ const useDeviceOrientationMovement = (
       winnerHistory.current.shift()
     }
 
-    const alphaCount = winnerHistory.current.filter((w) => w === "alpha").length
-    const betaCount = winnerHistory.current.filter((w) => w === "beta").length
-    const gammaCount = winnerHistory.current.filter((w) => w === "gamma").length
+    const alphaCount = winnerHistory.current.filter(
+        (w) => w === "alpha"
+      ).length,
+      betaCount = winnerHistory.current.filter((w) => w === "beta").length,
+      gammaCount = winnerHistory.current.filter((w) => w === "gamma").length
 
-    const maxCount = Math.max(alphaCount, betaCount, gammaCount)
-    const dominantWinner: Axios =
-      alphaCount === maxCount
-        ? "alpha"
-        : betaCount === maxCount
-          ? "beta"
-          : "gamma"
+    const maxCount = Math.max(alphaCount, betaCount, gammaCount),
+      dominantWinner: Axios =
+        alphaCount === maxCount
+          ? "alpha"
+          : betaCount === maxCount
+            ? "beta"
+            : "gamma"
 
     setCurrentWinner(winner)
     setHistoricalWinner(dominantWinner)
