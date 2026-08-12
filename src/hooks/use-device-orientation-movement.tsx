@@ -32,7 +32,8 @@ const useDeviceOrientationMovement = (
 
   const previousAlpha = useRef<number | null>(null),
     previousBeta = useRef<number | null>(null),
-    previousGamma = useRef<number | null>(null)
+    previousGamma = useRef<number | null>(null),
+    winnerHistory = useRef<string[]>([])
 
   const [movementAlpha, setMovementAlpha] = useState(0),
     [movementBeta, setMovementBeta] = useState(0),
@@ -105,24 +106,53 @@ const useDeviceOrientationMovement = (
 
     const absAlpha = Math.abs(movementAlpha),
       absBeta = Math.abs(movementBeta),
-      absGamma = Math.abs(movementGamma),
-      maxDelta = Math.max(absAlpha, absBeta, absGamma)
+      absGamma = Math.abs(movementGamma)
 
-    // o beta é o mais simples de isolar, então já adianta ele
-    if (maxDelta === absBeta) {
-      setMovementAlpha(0)
-      setMovementBeta(movementBeta)
+    const winner: "alpha" | "beta" | "gamma" =
+      absAlpha >= absBeta && absAlpha >= absGamma
+        ? "alpha"
+        : absBeta >= absAlpha && absBeta >= absGamma
+          ? "beta"
+          : "gamma"
+
+    winnerHistory.current.push(winner)
+    if (winnerHistory.current.length > 100) {
+      winnerHistory.current.shift()
+    }
+
+    const alphaCount = winnerHistory.current.filter((w) => w === "alpha").length
+    const betaCount = winnerHistory.current.filter((w) => w === "beta").length
+    const gammaCount = winnerHistory.current.filter((w) => w === "gamma").length
+
+    const maxCount = Math.max(alphaCount, betaCount, gammaCount)
+    const historicalWinner: "alpha" | "beta" | "gamma" =
+      alphaCount === maxCount
+        ? "alpha"
+        : betaCount === maxCount
+          ? "beta"
+          : "gamma"
+
+    const adjustedAlpha =
+        historicalWinner === "alpha" ? absAlpha * 1.15 : absAlpha,
+      adjustedBeta = historicalWinner === "beta" ? absBeta * 1.15 : absBeta,
+      adjustedGamma = historicalWinner === "gamma" ? absGamma * 1.15 : absGamma
+
+    const adjustedMaxDelta = Math.max(
+      adjustedAlpha,
+      adjustedBeta,
+      adjustedGamma
+    )
+
+    if (adjustedMaxDelta === adjustedAlpha) {
+      setMovementAlpha(movementAlpha)
+      setMovementBeta(0)
       setMovementGamma(0)
       return
     }
 
-    if (
-      maxDelta === absAlpha ||
-      // adiciona vantagem para o alpha que possui o movimento mais relevante
-      (maxDelta === absGamma && absAlpha * 1.15 >= absGamma)
-    ) {
-      setMovementAlpha(movementAlpha)
-      setMovementBeta(0)
+    if (adjustedMaxDelta === adjustedBeta) {
+      setMovementAlpha(0)
+      setMovementBeta(movementBeta)
       setMovementGamma(0)
       return
     }
