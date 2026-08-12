@@ -7,6 +7,8 @@ import { useDeviceOrientation } from "./use-device-orientation"
 // noise (alpha/gamma degenerate near beta ±90) and discard the frame.
 const GIMBAL_LOCK_JUMP_THRESHOLD = 5
 
+type Axios = "alpha" | "beta" | "gamma"
+
 interface UseDeviceOrientationMovementReturn {
   orientation: ReturnType<typeof useDeviceOrientation>["orientation"]
   isSupported: boolean
@@ -20,8 +22,8 @@ interface UseDeviceOrientationMovementReturn {
   movementBeta: number
   movementGamma: number
 
-  currentWinner: "alpha" | "beta" | "gamma"
-  historicalWinner: "alpha" | "beta" | "gamma"
+  currentWinner: Axios
+  historicalWinner: Axios
 }
 
 interface UseDeviceOrientationMovementOptions {
@@ -42,12 +44,8 @@ const useDeviceOrientationMovement = (
     [movementBeta, setMovementBeta] = useState(0),
     [movementGamma, setMovementGamma] = useState(0)
 
-  const [currentWinner, setCurrentWinner] = useState<
-    "alpha" | "beta" | "gamma"
-  >("alpha")
-  const [historicalWinner, setHistoricalWinner] = useState<
-    "alpha" | "beta" | "gamma"
-  >("alpha")
+  const [currentWinner, setCurrentWinner] = useState<Axios>("alpha")
+  const [historicalWinner, setHistoricalWinner] = useState<Axios>("alpha")
 
   useEffect(() => {
     const { orientation } = deviceOrientation
@@ -98,6 +96,13 @@ const useDeviceOrientationMovement = (
       movementBeta = currentBeta - previousBeta.current,
       movementGamma = currentGamma - previousGamma.current
 
+    // Always update baseline first (critical for gimbal lock).
+    // If we skip the update on noise frames, the next frame keeps
+    // comparing against the pre-jump value and the large delta persists.
+    previousAlpha.current = currentAlpha
+    previousBeta.current = currentBeta
+    previousGamma.current = currentGamma
+
     const hasGimbalLockNoise =
       Math.abs(movementAlpha) > GIMBAL_LOCK_JUMP_THRESHOLD ||
       Math.abs(movementGamma) > GIMBAL_LOCK_JUMP_THRESHOLD
@@ -105,10 +110,6 @@ const useDeviceOrientationMovement = (
     if (hasGimbalLockNoise) {
       return
     }
-
-    previousAlpha.current = currentAlpha
-    previousBeta.current = currentBeta
-    previousGamma.current = currentGamma
 
     if (!options?.hardAcumulator) {
       setMovementAlpha(movementAlpha)
@@ -123,7 +124,7 @@ const useDeviceOrientationMovement = (
 
     const maxDelta = Math.max(absAlpha, absBeta, absGamma)
 
-    let winner: "alpha" | "beta" | "gamma"
+    let winner: Axios
 
     if (maxDelta === absBeta) {
       winner = "beta"
@@ -146,7 +147,7 @@ const useDeviceOrientationMovement = (
     const gammaCount = winnerHistory.current.filter((w) => w === "gamma").length
 
     const maxCount = Math.max(alphaCount, betaCount, gammaCount)
-    const dominantWinner: "alpha" | "beta" | "gamma" =
+    const dominantWinner: Axios =
       alphaCount === maxCount
         ? "alpha"
         : betaCount === maxCount
