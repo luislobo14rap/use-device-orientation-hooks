@@ -19,6 +19,9 @@ interface UseDeviceOrientationMovementReturn {
   movementAlpha: number
   movementBeta: number
   movementGamma: number
+
+  currentWinner: "alpha" | "beta" | "gamma"
+  historicalWinner: "alpha" | "beta" | "gamma"
 }
 
 interface UseDeviceOrientationMovementOptions {
@@ -39,6 +42,9 @@ const useDeviceOrientationMovement = (
     [movementBeta, setMovementBeta] = useState(0),
     [movementGamma, setMovementGamma] = useState(0)
 
+  const [currentWinner, setCurrentWinner] = useState<"alpha" | "beta" | "gamma">("alpha")
+  const [historicalWinner, setHistoricalWinner] = useState<"alpha" | "beta" | "gamma">("alpha")
+
   useEffect(() => {
     const { orientation } = deviceOrientation
 
@@ -47,14 +53,17 @@ const useDeviceOrientationMovement = (
       previousBeta.current = null
       previousGamma.current = null
 
-      setMovementAlpha(0)
-      setMovementBeta(0)
-      setMovementGamma(0)
+       setMovementAlpha(0)
+       setMovementBeta(0)
+       setMovementGamma(0)
 
-      return
-    }
+       setCurrentWinner("alpha")
+       setHistoricalWinner("alpha")
 
-    const { alpha, beta, gamma } = orientation
+       return
+     }
+
+     const { alpha, beta, gamma } = orientation
 
     if (
       previousAlpha.current === null ||
@@ -143,6 +152,9 @@ const useDeviceOrientationMovement = (
       adjustedGamma
     )
 
+    setCurrentWinner(winner)
+    setHistoricalWinner(historicalWinner)
+
     if (adjustedMaxDelta === adjustedAlpha) {
       setMovementAlpha(movementAlpha)
       setMovementBeta(0)
@@ -167,6 +179,8 @@ const useDeviceOrientationMovement = (
     movementAlpha,
     movementBeta,
     movementGamma,
+    currentWinner,
+    historicalWinner,
   }
 }
 
