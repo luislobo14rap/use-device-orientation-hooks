@@ -40,10 +40,15 @@ export default function OrientationExamples() {
       return
     }
 
-    setTotalAlpha(a => a + Math.abs(device.movementAlpha))
-    setTotalBeta(b => b + Math.abs(device.movementBeta))
-    setTotalGamma(g => g + Math.abs(device.movementGamma))
-  }, [device.isListening, device.movementAlpha, device.movementBeta, device.movementGamma])
+    setTotalAlpha((a) => a + Math.abs(device.movementAlpha))
+    setTotalBeta((b) => b + Math.abs(device.movementBeta))
+    setTotalGamma((g) => g + Math.abs(device.movementGamma))
+  }, [
+    device.isListening,
+    device.movementAlpha,
+    device.movementBeta,
+    device.movementGamma,
+  ])
 
   let alpha = device.orientation?.alpha ?? "-",
     beta = device.orientation?.beta ?? "-",
@@ -116,6 +121,14 @@ export default function OrientationExamples() {
           <div>beta: {totalBeta.toFixed(2)}</div>
           <div>gamma: {totalGamma.toFixed(2)}</div>
         </div>
+
+        {hardAcumulator && (
+          <div style={{ marginTop: 8 }}>
+            <strong>Winner (hard acumulator):</strong>
+            <div>current: {device.currentWinner}</div>
+            <div>historical: {device.historicalWinner}</div>
+          </div>
+        )}
       </Card>
     </main>
   )
