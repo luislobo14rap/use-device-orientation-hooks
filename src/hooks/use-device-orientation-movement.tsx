@@ -117,8 +117,9 @@ const useDeviceOrientationMovement = (
       return
     }
 
-    const absAlpha = Math.abs(movementAlpha),
-      absBeta = Math.abs(movementBeta),
+    let absAlpha = Math.abs(movementAlpha)
+    absAlpha = absAlpha * 1.15
+    const absBeta = Math.abs(movementBeta),
       absGamma = Math.abs(movementGamma)
 
     const winner: "alpha" | "beta" | "gamma" =
@@ -145,10 +146,12 @@ const useDeviceOrientationMovement = (
           ? "beta"
           : "gamma"
 
-    const adjustedAlpha =
-        dominantWinner === "alpha" ? absAlpha * 1.45 : absAlpha,
-      adjustedBeta = dominantWinner === "beta" ? absBeta * 1.15 : absBeta,
-      adjustedGamma = dominantWinner === "gamma" ? absGamma * 1.15 : absGamma
+    const advantage = 1.25,
+      adjustedAlpha =
+        dominantWinner === "alpha" ? absAlpha * advantage : absAlpha,
+      adjustedBeta = dominantWinner === "beta" ? absBeta * advantage : absBeta,
+      adjustedGamma =
+        dominantWinner === "gamma" ? absGamma * advantage : absGamma
 
     const adjustedMaxDelta = Math.max(
       adjustedAlpha,
