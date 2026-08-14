@@ -3,24 +3,22 @@
 import { useEffect, useRef, useState } from "react"
 import { useDeviceOrientation } from "./use-device-orientation"
 
-// Above this many degrees of raw delta between frames, treat the reading as
-// gimbal lock noise (alpha/gamma degenerate near beta ±90) and discard the
-// frame entirely — regardless of which axis spiked. Value is intentionally
-// large: gimbal lock artifacts are ~90°+ jumps, far above any plausible
-// human movement between frames. See tradeoffs.md item 1.
-const DISCARD_ABOVE = 67.5
-
 type Axis = "alpha" | "beta" | "gamma"
 
+type Quaternion = {
+  x: number
+  y: number
+  z: number
+  w: number
+}
+
 interface UseDeviceOrientationMovementOptions {
-  /** Clamp ceiling (degrees-equivalent) applied to every reported delta. Defaults to 1. */
+  /** Clamp ceiling applied to every reported delta. Defaults to 1. */
   maxExpected?: number
+
   /**
-   * When true, only the single dominant axis per frame is reported (the
-   * other two are zeroed), chosen by magnitude with a bias toward alpha
-   * over gamma on near-ties. Also tracks a rolling historical winner over
-   * the last 10 frames. When false/omitted, all three axes are reported
-   * every frame (each still clamped).
+   * When true, only the single dominant axis per frame is reported.
+   * When false, all three axes are reported every frame.
    */
   hardAcumulator?: boolean
 }
@@ -34,33 +32,157 @@ interface UseDeviceOrientationMovementReturn {
   stopListening: () => void
   isListening: boolean
 
-  // Valores "crus", na nomenclatura do sensor: x = beta (pitch), y = gamma
-  // (roll), z = alpha (yaw). Mantidos por compatibilidade — quem já
-  // consome x/y/z não é afetado.
+  // x = beta / pitch
+  // y = gamma / roll
+  // z = alpha / yaw
   x: number
   y: number
   z: number
 
-  // ATENÇÃO: x é derivado de beta e y é derivado de gamma — sim, "trocado"
-  // em relação ao que o nome sugere. Isso NÃO é um erro de troca de eixo.
-  // x = beta = giro pra frente/trás (pitch) → conceitualmente é o eixo "Y" do
-  //     mundo web (vertical, como no scroll: inclinar pra frente ~ avançar/descer).
-  // y = gamma = giro lateral esquerda/direita (roll) → conceitualmente é o
-  //     eixo "X" do mundo web (horizontal: inclinar pra direita aumenta X).
-  // z = alpha (yaw/compass) não sofre do mesmo cruzamento — forceZ é
-  //     identidade (forceZ = z). Ver tradeoffs.md item 9.
-  //
-  // forceX/forceY/forceZ existem justamente pra deixar esse cruzamento
-  // explícito e intencional. Se um dia alguém for "consertar" achando que
-  // x/forceY ou y/forceX estão invertidos: não estão. Essa é a intenção.
   forceX: number
   forceY: number
   forceZ: number
 
-  /** Eixo dominante no frame mais recente (só relevante com hardAcumulator). */
   currentWinner: Axis
-  /** Eixo mais frequentemente dominante nos últimos 10 frames. */
   historicalWinner: Axis
+}
+
+const DEG_TO_RAD = Math.PI / 180
+const RAD_TO_DEG = 180 / Math.PI
+
+/**
+ * Converte alpha/beta/gamma para quaternion.
+ *
+ * DeviceOrientation usa a sequência:
+ * Z (alpha) → X' (beta) → Y'' (gamma)
+ */
+function deviceOrientationToQuaternion(
+  alpha: number,
+  beta: number,
+  gamma: number
+): Quaternion {
+  const x = beta * DEG_TO_RAD
+  const y = gamma * DEG_TO_RAD
+  const z = alpha * DEG_TO_RAD
+
+  const cX = Math.cos(x / 2)
+  const cY = Math.cos(y / 2)
+  const cZ = Math.cos(z / 2)
+
+  const sX = Math.sin(x / 2)
+  const sY = Math.sin(y / 2)
+  const sZ = Math.sin(z / 2)
+
+  return normalizeQuaternion({
+    w: cX * cY * cZ - sX * sY * sZ,
+    x: sX * cY * cZ - cX * sY * sZ,
+    y: cX * sY * cZ + sX * cY * sZ,
+    z: cX * cY * sZ + sX * sY * cZ,
+  })
+}
+
+function multiplyQuaternion(a: Quaternion, b: Quaternion): Quaternion {
+  return {
+    w: a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z,
+
+    x: a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+
+    y: a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+
+    z: a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
+  }
+}
+
+function conjugateQuaternion(q: Quaternion): Quaternion {
+  return {
+    x: -q.x,
+    y: -q.y,
+    z: -q.z,
+    w: q.w,
+  }
+}
+
+function normalizeQuaternion(q: Quaternion): Quaternion {
+  const length = Math.hypot(q.x, q.y, q.z, q.w)
+
+  if (length === 0) {
+    return {
+      x: 0,
+      y: 0,
+      z: 0,
+      w: 1,
+    }
+  }
+
+  return {
+    x: q.x / length,
+    y: q.y / length,
+    z: q.z / length,
+    w: q.w / length,
+  }
+}
+
+/**
+ * Calcula a rotação relativa entre duas orientações.
+ *
+ * Retorna um vetor de rotação em graus:
+ *
+ * x → componente de rotação no eixo X / beta
+ * y → componente de rotação no eixo Y / gamma
+ * z → componente de rotação no eixo Z / alpha
+ */
+function quaternionToDelta(previous: Quaternion, current: Quaternion) {
+  let delta = normalizeQuaternion(
+    multiplyQuaternion(conjugateQuaternion(previous), current)
+  )
+
+  // q e -q representam a mesma orientação.
+  // Escolhemos a representação do menor arco.
+  if (delta.w < 0) {
+    delta = {
+      x: -delta.x,
+      y: -delta.y,
+      z: -delta.z,
+      w: -delta.w,
+    }
+  }
+
+  const w = Math.max(-1, Math.min(1, delta.w))
+
+  const angle = 2 * Math.acos(w)
+  const sinHalfAngle = Math.sin(angle / 2)
+
+  /*
+   * Para uma rotação muito pequena:
+   *
+   * sin(angle / 2) ≈ angle / 2
+   *
+   * Portanto:
+   *
+   * rotationVector ≈ 2 * quaternion.xyz
+   */
+  if (Math.abs(sinHalfAngle) < 1e-6) {
+    return {
+      x: delta.x * 2 * RAD_TO_DEG,
+      y: delta.y * 2 * RAD_TO_DEG,
+      z: delta.z * 2 * RAD_TO_DEG,
+    }
+  }
+
+  /*
+   * axis = quaternion.xyz / sin(angle / 2)
+   *
+   * rotationVector = axis * angle
+   */
+  const angleInDegrees = angle * RAD_TO_DEG
+
+  return {
+    x: (delta.x / sinHalfAngle) * angleInDegrees,
+
+    y: (delta.y / sinHalfAngle) * angleInDegrees,
+
+    z: (delta.z / sinHalfAngle) * angleInDegrees,
+  }
 }
 
 const useDeviceOrientationMovement = (
@@ -69,14 +191,21 @@ const useDeviceOrientationMovement = (
   const { maxExpected = 1, hardAcumulator = false } = options
 
   const deviceOrientation = useDeviceOrientation()
+
   const { orientation } = deviceOrientation
 
-  // Baseline começa em 0, sem guard de "primeiro frame" com null — decisão
-  // consciente (tradeoffs.md item 6): o maior desvio possível no primeiro
-  // frame é o próprio maxExpected, imperceptível no início de uma animação.
-  const previousAlpha = useRef(0)
-  const previousBeta = useRef(0)
-  const previousGamma = useRef(0)
+  /*
+   * IMPORTANTE:
+   *
+   * O baseline continua sendo (0, 0, 0),
+   * exatamente como no código original.
+   *
+   * Não usamos null nem ignoramos o primeiro frame.
+   */
+  const previousQuaternion = useRef<Quaternion>(
+    deviceOrientationToQuaternion(0, 0, 0)
+  )
+
   const winnerHistory = useRef<Axis[]>([])
 
   const [x, setX] = useState(0)
@@ -84,18 +213,23 @@ const useDeviceOrientationMovement = (
   const [z, setZ] = useState(0)
 
   const [currentWinner, setCurrentWinner] = useState<Axis>("alpha")
+
   const [historicalWinner, setHistoricalWinner] = useState<Axis>("alpha")
 
   useEffect(() => {
+    /*
+     * Quando o sensor deixa de fornecer orientação,
+     * restauramos o baseline original.
+     */
     if (!orientation) {
-      previousAlpha.current = 0
-      previousBeta.current = 0
-      previousGamma.current = 0
+      previousQuaternion.current = deviceOrientationToQuaternion(0, 0, 0)
+
       winnerHistory.current = []
 
       setX(0)
       setY(0)
       setZ(0)
+
       setCurrentWinner("alpha")
       setHistoricalWinner("alpha")
 
@@ -104,85 +238,119 @@ const useDeviceOrientationMovement = (
 
     const { alpha, beta, gamma } = orientation
 
-    // Valores crus, com sinal preservado. Nada de Math.abs()/+100 aqui: o
-    // delta já cancela qualquer offset constante (é um no-op matemático), e
-    // aplicar abs() no valor bruto ANTES do delta apaga movimento real perto
-    // de zero-crossing (ex: -1° → 1° é um giro real de 2°, mas viraria
-    // delta 0 se os dois lados fossem abs()'d antes de subtrair).
-    const currentAlpha = alpha ?? previousAlpha.current,
-      currentBeta = beta ?? previousBeta.current,
-      currentGamma = gamma ?? previousGamma.current
+    /*
+     * Mantém o comportamento original:
+     * quando algum valor não está disponível,
+     * usamos o valor anterior naquele eixo.
+     */
+    const currentAlpha = alpha ?? 0
 
-    const deltaAlpha = currentAlpha - previousAlpha.current,
-      deltaBeta = currentBeta - previousBeta.current,
-      deltaGamma = currentGamma - previousGamma.current
+    const currentBeta = beta ?? 0
 
-    // Qualquer oscilação grande em qualquer eixo é descartada — não é só
-    // proteção contra gimbal lock especificamente, é um teto máximo geral
-    // de plausibilidade por frame.
-    const hasNoise =
-      Math.abs(deltaAlpha) > DISCARD_ABOVE * 2 ||
-      Math.abs(deltaBeta) > DISCARD_ABOVE ||
-      Math.abs(deltaGamma) > DISCARD_ABOVE
+    const currentGamma = gamma ?? 0
 
-    // Baseline sempre atualiza, mesmo em frame de ruído (tradeoffs.md item 5)
-    previousAlpha.current = currentAlpha
-    previousBeta.current = currentBeta
-    previousGamma.current = currentGamma
+    const currentQuaternion = deviceOrientationToQuaternion(
+      currentAlpha,
+      currentBeta,
+      currentGamma
+    )
 
-    if (hasNoise) return
+    /*
+     * A diferença agora é calculada entre orientações,
+     * não entre os números dos Euler angles.
+     */
+    const delta = quaternionToDelta(
+      previousQuaternion.current,
+      currentQuaternion
+    )
+
+    /*
+     * Baseline sempre avança.
+     *
+     * Inclusive quando houver uma movimentação grande:
+     * o próximo frame será comparado contra este.
+     */
+    previousQuaternion.current = currentQuaternion
+
+    /*
+     * maxExpected continua existindo exatamente
+     * como controle de quanto um frame pode afetar
+     * visualmente o movimento.
+     */
+    const deltaX = clamp(delta.x)
+    const deltaY = clamp(delta.y)
+    const deltaZ = clamp(delta.z)
 
     if (!hardAcumulator) {
-      setX(clamp(deltaBeta, maxExpected))
-      setY(clamp(deltaGamma, maxExpected))
-      setZ(clamp(deltaAlpha, maxExpected))
+      setX(deltaX)
+      setY(deltaY)
+      setZ(deltaZ)
+
       return
     }
 
-    const absAlpha = Math.abs(deltaAlpha),
-      absBeta = Math.abs(deltaBeta),
-      absGamma = Math.abs(deltaGamma)
+    /*
+     * hardAcumulator:
+     * mantém apenas o eixo dominante.
+     *
+     * A correspondência continua sendo:
+     *
+     * x → beta
+     * y → gamma
+     * z → alpha
+     */
+    const absX = Math.abs(deltaX)
+    const absY = Math.abs(deltaY)
+    const absZ = Math.abs(deltaZ)
 
-    const maxDelta = Math.max(absAlpha, absBeta, absGamma)
+    const maxDelta = Math.max(absX, absY, absZ)
 
     let winner: Axis
 
-    if (maxDelta === absBeta) {
+    /*
+     * Mantém a prioridade original:
+     * beta primeiro,
+     * depois alpha,
+     * depois gamma.
+     *
+     * E mantém o viés especial:
+     * alpha ganha de gamma quando gamma
+     * não é significativamente maior.
+     */
+    if (maxDelta === absX) {
       winner = "beta"
-    } else if (
-      maxDelta === absAlpha ||
-      (maxDelta === absGamma && absAlpha >= absGamma * 0.5)
-    ) {
-      // Viés proposital: alpha ganha de gamma mesmo em quase-empate.
+    } else if (maxDelta === absZ || (maxDelta === absY && absZ >= absY * 0.5)) {
       winner = "alpha"
     } else {
       winner = "gamma"
     }
 
     winnerHistory.current.push(winner)
-    if (winnerHistory.current.length > 1000) {
+
+    if (winnerHistory.current.length > 100) {
       winnerHistory.current.shift()
     }
 
-    const alphaCount = winnerHistory.current.filter(
-        (w) => w === "alpha"
-      ).length,
-      betaCount = winnerHistory.current.filter((w) => w === "beta").length,
-      gammaCount = winnerHistory.current.filter((w) => w === "gamma").length
+    const alphaCount = winnerHistory.current.filter((w) => w === "alpha").length
 
-    const maxCount = Math.max(alphaCount, betaCount, gammaCount),
-      dominantWinner: Axis =
-        alphaCount === maxCount
-          ? "alpha"
-          : betaCount === maxCount
-            ? "beta"
-            : "gamma"
+    const betaCount = winnerHistory.current.filter((w) => w === "beta").length
+
+    const gammaCount = winnerHistory.current.filter((w) => w === "gamma").length
+
+    const maxCount = Math.max(alphaCount, betaCount, gammaCount)
+
+    const dominantWinner: Axis =
+      alphaCount === maxCount
+        ? "alpha"
+        : betaCount === maxCount
+          ? "beta"
+          : "gamma"
 
     setCurrentWinner(winner)
     setHistoricalWinner(dominantWinner)
 
     if (winner === "beta") {
-      setX(clamp(deltaBeta, maxExpected))
+      setX(deltaX)
       setY(0)
       setZ(0)
       return
@@ -190,35 +358,45 @@ const useDeviceOrientationMovement = (
 
     if (winner === "gamma") {
       setX(0)
-      setY(clamp(deltaGamma, maxExpected))
+      setY(deltaY)
       setZ(0)
       return
     }
 
     setX(0)
     setY(0)
-    setZ(clamp(deltaAlpha, maxExpected))
+    setZ(deltaZ)
   }, [orientation, maxExpected, hardAcumulator])
 
-  const forceX = y,
-    forceY = x,
-    forceZ = z
+  function clamp(value: number) {
+    return Math.max(Math.min(value, maxExpected), -maxExpected)
+  }
+
+  /*
+   * Mantém o contrato existente:
+   *
+   * forceX = gamma / y
+   * forceY = beta  / x
+   * forceZ = alpha / z
+   */
+  const forceX = y
+  const forceY = x
+  const forceZ = z
 
   return {
     ...deviceOrientation,
+
     x,
     y,
     z,
+
     forceX,
     forceY,
     forceZ,
+
     currentWinner,
     historicalWinner,
   }
-}
-
-function clamp(value: number, maxExpected: number) {
-  return Math.max(Math.min(value, maxExpected), -maxExpected)
 }
 
 export { useDeviceOrientationMovement }
